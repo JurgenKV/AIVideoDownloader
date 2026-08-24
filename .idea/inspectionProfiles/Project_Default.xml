@@ -1,0 +1,44 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="altgraph" />
+          <option value="attrs" />
+          <option value="certifi" />
+          <option value="cffi" />
+          <option value="charset-normalizer" />
+          <option value="comtypes" />
+          <option value="h11" />
+          <option value="idna" />
+          <option value="outcome" />
+          <option value="packaging" />
+          <option value="pefile" />
+          <option value="pycparser" />
+          <option value="pyinstaller" />
+          <option value="pyinstaller-hooks-contrib" />
+          <option value="pyperclip" />
+          <option value="PySocks" />
+          <option value="python-dotenv" />
+          <option value="pywin32" />
+          <option value="pywin32-ctypes" />
+          <option value="pywinauto" />
+          <option value="requests" />
+          <option value="selenium" />
+          <option value="setuptools" />
+          <option value="six" />
+          <option value="sniffio" />
+          <option value="sortedcontainers" />
+          <option value="trio" />
+          <option value="trio-websocket" />
+          <option value="typing_extensions" />
+          <option value="urllib3" />
+          <option value="webdriver-manager" />
+          <option value="websocket-client" />
+          <option value="wsproto" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
