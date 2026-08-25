@@ -10,7 +10,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 try:
     from pywinauto import Application
     from pywinauto.timings import Timings
-    from pywinauto.keyboard import send_keys
+    from pywinauto.keyboard import send_keys, parse_keys
 
     PYWINAUTO_AVAILABLE = True
 except ImportError:
@@ -47,7 +47,7 @@ class VizardDownloader:
 
         try:
             print(f"   ⏳ Ожидание диалога сохранения...")
-            time.sleep(2)
+            time.sleep(0.3)
 
             titles = ['Сохранить как', 'Save As', 'Сохранение', 'Сохранить', 'Save']
             dialog = None
@@ -68,7 +68,31 @@ class VizardDownloader:
 
             dialog.wait('ready', timeout=timeout)
             dialog.set_focus()
-            time.sleep(1)
+            time.sleep(0.3)
+            original_filename = None
+
+            # СПОСОБ 4: Через буфер обмена (Ctrl+A, Ctrl+C)
+            if not original_filename:
+                try:
+                    # Выделяем все и копируем в буфер
+                    dialog.set_focus()
+                    time.sleep(0.3)
+                    send_keys('^a')  # Ctrl+A
+                    time.sleep(0.3)
+                    send_keys('^c')  # Ctrl+C
+                    time.sleep(0.3)
+
+                    import pyperclip
+                    original_filename = pyperclip.paste()
+                    original_filename = original_filename.replace(" ", "_")
+                    original_filename = original_filename.replace(".mp4", "].mp4")
+                    if original_filename:
+                        print(f"   📄 Имя файла из диалога (буфер обмена): {original_filename}")
+                except Exception as e:
+                    print(f"   ⚠️ Буфер обмена не сработал: {e}")
+            print("Оригинальное название файла: " + original_filename )
+            if not original_filename:
+                original_filename = ".mp4"
 
             try:
                 send_keys('^a')
@@ -77,14 +101,15 @@ class VizardDownloader:
                 time.sleep(0.3)
 
                 print(f"   📝 Ввод пути: {file_path}")
-                send_keys(file_path)
+
+                send_keys(file_path.replace(".mp4", f"_[{original_filename}"), pause=0.001)
                 print(f"   ✅ Путь введен")
-                time.sleep(0.5)
+                time.sleep(0.1)
             except Exception as e:
                 print(f"   ⚠️ Ошибка ввода пути: {e}")
                 return False
 
-            time.sleep(0.5)
+            time.sleep(0.1)
 
             try:
                 send_keys('{ENTER}')
