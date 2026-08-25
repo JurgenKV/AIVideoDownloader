@@ -70,8 +70,17 @@ class VizardDownloader:
             dialog.set_focus()
             time.sleep(0.3)
             original_filename = None
+            # СПОСОБ 1: Через буфер UIBackend
+            if not original_filename:
+                app_uia = Application(backend="uia").connect(handle=dialog.handle)
+                dialog_uia = app_uia.window(handle=dialog.handle)
+                edit = dialog_uia.child_window(class_name="Edit")
+                if edit.exists():
+                    original_filename = edit.get_value()
+                    if original_filename:
+                        print(f"   📄 Имя файла из диалога (UIBackend): {original_filename}")
 
-            # СПОСОБ 4: Через буфер обмена (Ctrl+A, Ctrl+C)
+            # СПОСОБ 2: Через буфер обмена (Ctrl+A, Ctrl+C)
             if not original_filename:
                 try:
                     # Выделяем все и копируем в буфер
@@ -82,35 +91,28 @@ class VizardDownloader:
                     time.sleep(0.01)
                     send_keys('^c')  # Ctrl+C
                     time.sleep(0.01)
-
-                    original_filename = pyperclip.paste()
-                    original_filename = original_filename.replace(" ", "_")
-                    original_filename = original_filename.replace(".mp4", "].mp4")
-                    if original_filename:
-                        print(f"   📄 Имя файла из диалога (буфер обмена): {original_filename}")
                 except Exception as e:
                     print(f"   ⚠️ Буфер обмена не сработал: {e}")
-            print("Оригинальное название файла: " + original_filename )
+
             if not original_filename:
                 original_filename = ".mp4"
+
+            original_filename = original_filename.replace(" ", "_")
+            original_filename = original_filename.replace(".mp4", "].mp4")
 
             try:
                 send_keys('^a')
                 time.sleep(0.01)
                 send_keys('{DEL}')
                 time.sleep(0.01)
-
-                print(f"   📝 Ввод пути: {file_path}")
-
                 send_keys(file_path.replace(".mp4", f"_[{original_filename}"), pause=0.001)
+                print(f"   📝 Ввод пути: {file_path}")
                 print(f"   ✅ Путь введен")
                 time.sleep(0.1)
             except Exception as e:
                 print(f"   ⚠️ Ошибка ввода пути: {e}")
                 return False
-
             time.sleep(0.1)
-
             try:
                 send_keys('{ENTER}')
                 print("   💾 Нажата клавиша Enter")
