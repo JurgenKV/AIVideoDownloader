@@ -49,7 +49,7 @@ class EmailConfirmer:
 
             # 3) Ждем загрузки письма и переключаемся в iframe
             print("\n📌 3) Ожидание загрузки письма...")
-            time.sleep(3)
+            time.sleep(1)
 
             # Переключаемся в iframe с письмом
             if not self._switch_to_email_iframe():
@@ -162,7 +162,7 @@ class EmailConfirmer:
             self.browser.wait_short()
 
             # Ждем загрузки контента в iframe
-            time.sleep(2)
+            time.sleep(1)
 
             # Находим все ссылки в iframe
             links = self.driver.find_elements(By.TAG_NAME, "a")

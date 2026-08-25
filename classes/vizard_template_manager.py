@@ -67,7 +67,7 @@ class VizardTemplateManager:
 
         try:
             print("📌 1) Ожидание загрузки настроек...")
-            time.sleep(3)
+            time.sleep(1)
 
             print("📌 2) Настройка длительности клипа...")
             self._set_clip_length(self.config.CLIP_LENGTH)
@@ -146,7 +146,7 @@ class VizardTemplateManager:
                         time.sleep(0.5)
                         select_input.click()
                         print("   ✅ Открыт список длительности")
-                        time.sleep(1)
+                        time.sleep(0.5)
 
                         if length_value == 0:
                             print("   ℹ️ Длительность: Any length (по умолчанию)")
@@ -213,7 +213,7 @@ class VizardTemplateManager:
                             time.sleep(0.5)
                             select_input.click()
                             print("   ✅ Открыт список длительности")
-                            time.sleep(1)
+                            time.sleep(0.5)
 
                             if length_value == 0:
                                 print("   ℹ️ Длительность: Any length (по умолчанию)")
@@ -292,7 +292,7 @@ class VizardTemplateManager:
     def _configure_ai_options(self):
         """Настройка AI опций"""
         try:
-            time.sleep(2)
+            time.sleep(1)
 
             options = [
                 ("Add emojis", self.config.ENABLE_EMOJIS),
@@ -344,7 +344,7 @@ class VizardTemplateManager:
             print("   🔍 Поиск кнопки Get AI clips...")
 
             # Даем время на загрузку
-            time.sleep(2)
+            time.sleep(1)
 
             # Проверяем рекламу перед поиском
             self.browser.close_ad_if_exists()
@@ -361,13 +361,13 @@ class VizardTemplateManager:
                     try:
                         get_ai_btn.click()
                         print("   ✅ Кнопка Get AI clips нажата (обычный клик)")
-                        time.sleep(2)
+                        time.sleep(1)
                         return True
                     except:
                         try:
                             self.driver.execute_script("arguments[0].click();", get_ai_btn)
                             print("   ✅ Кнопка Get AI clips нажата (JavaScript)")
-                            time.sleep(2)
+                            time.sleep(1)
                             return True
                         except:
                             pass
@@ -385,13 +385,13 @@ class VizardTemplateManager:
                     try:
                         get_ai_btn.click()
                         print("   ✅ Кнопка Get AI clips нажата")
-                        time.sleep(2)
+                        time.sleep(1)
                         return True
                     except:
                         try:
                             self.driver.execute_script("arguments[0].click();", get_ai_btn)
                             print("   ✅ Кнопка Get AI clips нажата (JavaScript)")
-                            time.sleep(2)
+                            time.sleep(1)
                             return True
                         except:
                             pass
@@ -413,13 +413,13 @@ class VizardTemplateManager:
                         try:
                             parent.click()
                             print("   ✅ Кнопка Get AI clips нажата (через родителя)")
-                            time.sleep(2)
+                            time.sleep(1)
                             return True
                         except:
                             try:
                                 self.driver.execute_script("arguments[0].click();", parent)
                                 print("   ✅ Кнопка Get AI clips нажата (JavaScript через родителя)")
-                                time.sleep(2)
+                                time.sleep(1)
                                 return True
                             except:
                                 pass
@@ -436,7 +436,7 @@ class VizardTemplateManager:
                         time.sleep(0.5)
                         btn.click()
                         print("   ✅ Кнопка Get AI clips нажата")
-                        time.sleep(2)
+                        time.sleep(1)
                         return True
             except:
                 pass

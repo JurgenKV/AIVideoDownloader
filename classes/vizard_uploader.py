@@ -70,7 +70,7 @@ class VizardUploader:
                 # Небольшая пауза между видео
                 if i < len(videos_to_upload):
                     print(f"   ⏳ Пауза 3 секунды перед следующим видео...")
-                    time.sleep(3)
+                    time.sleep(1.5)
 
             except Exception as e:
                 print(f"   ❌ Ошибка загрузки видео {i}: {e}")
@@ -115,7 +115,7 @@ class VizardUploader:
             # 1) Переходим на страницу загрузки
             print(f"   📌 1) Переход на страницу загрузки...")
             self.driver.get("https://vizard.ai/upload?from=home_upload")
-            self.browser.wait_medium()
+            self.browser.wait_short()
 
             # 2) Загружаем видео
             print(f"   📌 2) Загружаем видео: {os.path.basename(video_path)}...")
@@ -127,7 +127,7 @@ class VizardUploader:
             # 3) Настраиваем параметры на странице загрузки
             print("   📌 3) Настройка параметров видео...")
 
-            time.sleep(3)
+            time.sleep(1)
 
             # Выбираем язык
             print("      📌 Выбор языка: Russian (Pусский)...")
@@ -231,7 +231,7 @@ class VizardUploader:
     def _configure_template(self):
         """Настройка AI шаблона на странице конфигурации (включая нажатие Get AI clips)"""
         try:
-            time.sleep(2)
+            time.sleep(1)
 
             from classes.vizard_template_manager import VizardTemplateManager
 
@@ -254,7 +254,7 @@ class VizardUploader:
         try:
             print("      🔍 Поиск поля выбора языка...")
 
-            time.sleep(2)
+            time.sleep(0.5)
 
             # СПОСОБ 1: Ищем поле ввода языка и кликаем по нему
             try:
@@ -265,7 +265,7 @@ class VizardUploader:
                     time.sleep(0.5)
                     language_input.click()
                     print("      ✅ Открыт список языков")
-                    time.sleep(1)
+                    time.sleep(0.5)
 
                     try:
                         russian_option = self.driver.find_element(By.XPATH,
@@ -308,7 +308,7 @@ class VizardUploader:
                         time.sleep(0.5)
                         select_input.click()
                         print("      ✅ Открыт список языков")
-                        time.sleep(1)
+                        time.sleep(0.5)
 
                         try:
                             russian_option = self.driver.find_element(By.XPATH,
@@ -398,7 +398,7 @@ class VizardUploader:
     def _upload_video_file(self, video_path):
         """Загрузка видео файла"""
         try:
-            self.browser.wait_medium()
+            self.browser.wait_short()
             self.browser.close_ad_if_exists()
 
             # Ищем input для загрузки файла
@@ -407,7 +407,7 @@ class VizardUploader:
                 if file_input:
                     file_input.send_keys(os.path.abspath(video_path))
                     print("      ✅ Видео отправлено на загрузку")
-                    self.browser.wait_long()
+                    self.browser.wait_medium()
                     return True
             except:
                 pass
@@ -418,7 +418,7 @@ class VizardUploader:
                 if file_input:
                     file_input.send_keys(os.path.abspath(video_path))
                     print("      ✅ Видео отправлено на загрузку")
-                    self.browser.wait_long()
+                    self.browser.wait_medium()
                     return True
             except:
                 pass
@@ -477,7 +477,7 @@ class VizardUploader:
     def _select_model_v2(self):
         """Выбор модели Model v2"""
         try:
-            time.sleep(2)
+            time.sleep(0.5)
 
             # Способ 1: Кликаем по текущей модели
             try:
@@ -486,7 +486,7 @@ class VizardUploader:
                     self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", model_select)
                     time.sleep(0.5)
                     model_select.click()
-                    time.sleep(1)
+                    time.sleep(0.5)
 
                     # Ищем Model v2
                     model_v2 = self.driver.find_element(By.XPATH,
@@ -537,7 +537,7 @@ class VizardUploader:
                     time.sleep(0.5)
                     upload_btn.click()
                     print("      ✅ Кнопка Upload нажата")
-                    time.sleep(1)
+                    time.sleep(0.5)
                     return True
             except:
                 pass
@@ -550,7 +550,7 @@ class VizardUploader:
                     time.sleep(0.5)
                     upload_btn.click()
                     print("      ✅ Кнопка Upload нажата")
-                    time.sleep(1)
+                    time.sleep(0.5)
                     return True
             except:
                 pass

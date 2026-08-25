@@ -40,7 +40,7 @@ class VizardManager:
 
             # 3) Ждем загрузки
             print("📌 3) Ожидание загрузки страницы...")
-            self.browser.wait_medium()
+            self.browser.wait_short()
 
             print("\n✅ Vizard успешно обновлен!")
             return True
@@ -69,7 +69,7 @@ class VizardManager:
             self.driver.execute_script("window.open('');")
             self.driver.switch_to.window(self.driver.window_handles[-1])
             self.driver.get("https://vizard.ai/upload?from=home_upload")
-            self.browser.wait_medium()
+            self.browser.wait_short()
             return True
 
         except Exception as e:

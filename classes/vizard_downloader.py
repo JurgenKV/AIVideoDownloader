@@ -40,7 +40,7 @@ class VizardDownloader:
             print("✅ pywinauto инициализирована")
 
     def _handle_save_file_dialog(self, file_path, timeout=15):
-        """Обработка диалога сохранения файла (Save As)"""
+        """Обработка диалога сохранения файла (Save As) - ТОЛЬКО UIA"""
         if not PYWINAUTO_AVAILABLE:
             print("   ⚠️ pywinauto не установлена")
             return False
@@ -51,7 +51,9 @@ class VizardDownloader:
 
             titles = ['Сохранить как', 'Save As', 'Сохранение', 'Сохранить', 'Save']
             dialog = None
+            dialog_uia = None
 
+            # Подключаемся к диалогу через Win32 (для поиска окна)
             for title in titles:
                 try:
                     app = Application().connect(title_re=title)
@@ -69,53 +71,101 @@ class VizardDownloader:
             dialog.wait('ready', timeout=timeout)
             dialog.set_focus()
             time.sleep(0.3)
-            original_filename = None
-            # СПОСОБ 1: Через буфер UIBackend
-            if not original_filename:
+
+            # =========================================================
+            # ПОДКЛЮЧАЕМСЯ ЧЕРЕЗ UIA BACKEND
+            # =========================================================
+            try:
                 app_uia = Application(backend="uia").connect(handle=dialog.handle)
                 dialog_uia = app_uia.window(handle=dialog.handle)
+                print("   ✅ Подключение через UIA успешно")
+            except Exception as e:
+                print(f"   ❌ Ошибка подключения UIA: {e}")
+                return False
+
+            # =========================================================
+            # 1. ЧИТАЕМ ИМЯ ФАЙЛА ЧЕРЕЗ UIA
+            # =========================================================
+            original_filename = None
+
+            try:
                 edit = dialog_uia.child_window(class_name="Edit")
                 if edit.exists():
                     original_filename = edit.get_value()
                     if original_filename:
-                        print(f"   📄 Имя файла из диалога (UIBackend): {original_filename}")
-
-            # СПОСОБ 2: Через буфер обмена (Ctrl+A, Ctrl+C)
-            if not original_filename:
-                try:
-                    # Выделяем все и копируем в буфер
-                    dialog.set_focus()
-                    pyperclip.copy("")
-                    time.sleep(0.01)
-                    send_keys('^a')  # Ctrl+A
-                    time.sleep(0.01)
-                    send_keys('^c')  # Ctrl+C
-                    time.sleep(0.01)
-                except Exception as e:
-                    print(f"   ⚠️ Буфер обмена не сработал: {e}")
+                        print(f"   📄 Имя файла из диалога (UIA): {original_filename}")
+            except Exception as e:
+                print(f"   ⚠️ Не удалось прочитать имя файла: {e}")
 
             if not original_filename:
                 original_filename = ".mp4"
+                print(f"   ⚠️ Используем имя по умолчанию: {original_filename}")
 
+            # =========================================================
+            # 2. ФОРМИРУЕМ НОВОЕ ИМЯ
+            # =========================================================
             original_filename = original_filename.replace(" ", "_")
             original_filename = original_filename.replace(".mp4", "].mp4")
-
+            new_filepath = file_path.replace(".mp4", f"_[{original_filename}")
             try:
-                send_keys('^a')
-                time.sleep(0.01)
-                send_keys('{DEL}')
-                time.sleep(0.01)
-                send_keys(file_path.replace(".mp4", f"_[{original_filename}"), pause=0.001)
-                print(f"   📝 Ввод пути: {file_path}")
-                print(f"   ✅ Путь введен")
-                time.sleep(0.1)
+                edit = dialog_uia.child_window(class_name="Edit")
+                if edit.exists():
+                    # Способ 1: set_value() - напрямую устанавливает значение
+                    try:
+                        edit.set_value(new_filepath)
+                        print(f"   ✅ Путь вставлен через UIA set_value()")
+                    except:
+                        # Способ 2: set_text() - альтернативный метод
+                        try:
+                            edit.set_text(new_filepath)
+                            print(f"   ✅ Путь вставлен через UIA set_text()")
+                        except:
+                            # Способ 3: click() + type_keys() (минимальная эмуляция)
+                            try:
+                                edit.click()
+                                edit.type_keys('^a')  # Ctrl+A
+                                edit.type_keys('{DEL}')
+                                edit.type_keys(new_filepath)
+                                print(f"   ✅ Путь вставлен через UIA type_keys()")
+                            except Exception as e:
+                                print(f"   ❌ Не удалось вставить путь через UIA: {e}")
+                                return False
+                else:
+                    print("   ❌ Поле ввода не найдено через UIA")
+                    return False
+
             except Exception as e:
-                print(f"   ⚠️ Ошибка ввода пути: {e}")
+                print(f"   ❌ Ошибка вставки пути: {e}")
                 return False
+
             time.sleep(0.1)
+
+            # =========================================================
+            # 4. НАЖИМАЕМ КНОПКУ СОХРАНИТЬ ЧЕРЕЗ UIA
+            # =========================================================
+            try:
+                # Ищем кнопку "Сохранить" через UIA
+                save_button = dialog_uia.child_window(title_re='Сохранить|Save')
+                if save_button.exists():
+                    save_button.click()
+                    print("   💾 Кнопка 'Сохранить' нажата через UIA")
+                    return True
+                else:
+                    # Если не нашли по названию, ищем по типу
+                    save_button = dialog_uia.child_window(control_type="Button", title_re='Сохранить|Save')
+                    if save_button.exists():
+                        save_button.click()
+                        print("   💾 Кнопка 'Сохранить' нажата через UIA (control_type)")
+                        return True
+            except Exception as e:
+                print(f"   ⚠️ Не удалось нажать кнопку через UIA: {e}")
+
+            # =========================================================
+            # 5. РЕЗЕРВ: НАЖИМАЕМ ENTER (если UIA не сработала)
+            # =========================================================
             try:
                 send_keys('{ENTER}')
-                print("   💾 Нажата клавиша Enter")
+                print("   💾 Нажата клавиша Enter (резерв)")
                 return True
             except:
                 try:
