@@ -5,7 +5,7 @@ import requests
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
-
+import pyperclip
 # Импортируем pywinauto для работы с Windows-диалогами
 try:
     from pywinauto import Application
@@ -76,13 +76,13 @@ class VizardDownloader:
                 try:
                     # Выделяем все и копируем в буфер
                     dialog.set_focus()
-                    time.sleep(0.3)
+                    pyperclip.copy("")
+                    time.sleep(0.01)
                     send_keys('^a')  # Ctrl+A
-                    time.sleep(0.3)
+                    time.sleep(0.01)
                     send_keys('^c')  # Ctrl+C
-                    time.sleep(0.3)
+                    time.sleep(0.01)
 
-                    import pyperclip
                     original_filename = pyperclip.paste()
                     original_filename = original_filename.replace(" ", "_")
                     original_filename = original_filename.replace(".mp4", "].mp4")
@@ -96,9 +96,9 @@ class VizardDownloader:
 
             try:
                 send_keys('^a')
-                time.sleep(0.3)
+                time.sleep(0.01)
                 send_keys('{DEL}')
-                time.sleep(0.3)
+                time.sleep(0.01)
 
                 print(f"   📝 Ввод пути: {file_path}")
 
