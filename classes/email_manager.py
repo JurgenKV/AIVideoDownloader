@@ -42,7 +42,7 @@ class EmailManager:
             self.browser.wait_short()
 
             # 3) Выбираем домен
-            print("\n📌 3) Выбираем домен @mediaeast.uk...")
+            print("\n📌 3) Выбираем домен @deepmails..")
             self._select_domain()
 
             self.browser.wait_medium()
@@ -213,14 +213,14 @@ class EmailManager:
             return False
 
     def _select_domain(self):
-        """Выбор домена @mediaeast.uk"""
+        """Выбор домена @deepmails.org.uk"""
         try:
             self.browser.close_ad_if_exists()
 
             methods = [
-                (By.XPATH, "//a[contains(text(), '@mediaeast.uk')]"),
-                (By.XPATH, "//a[@onclick and contains(@onclick, 'mediaeast')]"),
-                (By.XPATH, "//li//a[contains(text(), '@mediaeast.uk')]"),
+                (By.XPATH, "//a[contains(text(), '@deepmails.org')]"),
+                (By.XPATH, "//a[@onclick and contains(@onclick, 'deepmails.org')]"),
+                (By.XPATH, "//li//a[contains(text(), '@deepmails.org')]"),
                 (By.CSS_SELECTOR, "a[data-type='4']"),
             ]
 
@@ -235,13 +235,13 @@ class EmailManager:
                             domain_item.click()
                             self.browser.wait_short()
                             self.browser.handle_alert(accept=True)
-                            print("   ✅ Домен @mediaeast.uk выбран")
+                            print("   ✅ Домен @deepmails выбран")
                             return True
                         except:
                             self.driver.execute_script("arguments[0].click();", domain_item)
                             self.browser.wait_short()
                             self.browser.handle_alert(accept=True)
-                            print("   ✅ Домен @mediaeast.uk выбран (JavaScript)")
+                            print("   ✅ Домен @deepmails выбран (JavaScript)")
                             return True
                 except:
                     continue

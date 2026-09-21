@@ -12,7 +12,7 @@ class AIConfig:
     MAX_VIDEOS = 3  # По умолчанию 3 видео
 
     # ==================== НАСТРОЙКИ ДЛИТЕЛЬНОСТИ ====================
-    CLIP_LENGTH = 1  # <30s
+    CLIP_LENGTH = 0  # <30s
 
     # ==================== НАСТРОЙКИ ШАБЛОНА ====================
     TEMPLATE_NAME = "Mr. Beast"
@@ -35,7 +35,7 @@ class AIConfig:
 class AIConfigBeast(AIConfig):
     """Стиль Mr. Beast"""
     MAX_VIDEOS = 3
-    CLIP_LENGTH = 1
+    CLIP_LENGTH = 0
     TEMPLATE_NAME = "Mr. Beast"
     ENABLE_EMOJIS = True
     ENABLE_KEYWORDS = True

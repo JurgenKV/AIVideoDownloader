@@ -5,6 +5,8 @@ import time
 import shutil
 import traceback
 from pathlib import Path
+# СБОРКА - pyinstaller --onefile --hidden-import selenium.webdriver.chrome.webdriver --hidden-import selenium.webdriver.chrome.service main.py
+
 
 # Добавляем путь к папке classes
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'classes'))
