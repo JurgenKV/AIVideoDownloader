@@ -279,7 +279,7 @@ class VizardDownloader:
 
                     # Ждем появления кнопок Download
                     print(f"   ⏳ Ожидание появления кнопок Download...")
-                    if not self._wait_for_download_buttons_with_refresh(timeout=600):
+                    if not self._wait_for_download_buttons_with_refresh(timeout=1000):
                         print(f"   ⚠️ Время ожидания истекло для проекта {project_name}")
                         self.driver.get("https://vizard.ai/workspace")
                         self.browser.wait_medium()
@@ -407,7 +407,7 @@ class VizardDownloader:
             print(f"   ⚠️ Ошибка открытия проекта: {e}")
             return False
 
-    def _wait_for_download_buttons_with_refresh(self, timeout=600):
+    def _wait_for_download_buttons_with_refresh(self, timeout=1000):
         """Ожидание появления кнопок Download с обновлением страницы каждые 30 секунд"""
         waited = 0
         refresh_interval = 30

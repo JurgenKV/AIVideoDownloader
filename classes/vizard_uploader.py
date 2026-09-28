@@ -77,7 +77,7 @@ class VizardUploader:
                 continue
 
         # После загрузки всех видео ждем UPLOAD_WAIT_TIME
-        wait_time = getattr(self.config, 'UPLOAD_WAIT_TIME', 60)
+        wait_time = getattr(self.config, 'UPLOAD_WAIT_TIME', 120)
         print(f"\n{'=' * 50}")
         print(f"📌 Ожидание загрузки всех видео на сервер ({wait_time} секунд)...")
         print(f"{'=' * 50}")
