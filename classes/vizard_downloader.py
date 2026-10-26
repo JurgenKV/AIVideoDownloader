@@ -1,4 +1,4 @@
-# classes/vizard_downloader.py (только измененная часть __init__)
+# classes/vizard_downloader.py
 import os
 import time
 import requests
@@ -6,12 +6,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import pyperclip
-# Импортируем pywinauto для работы с Windows-диалогами
+
 try:
     from pywinauto import Application
     from pywinauto.timings import Timings
     from pywinauto.keyboard import send_keys, parse_keys
-
     PYWINAUTO_AVAILABLE = True
 except ImportError:
     PYWINAUTO_AVAILABLE = False
@@ -25,35 +24,29 @@ class VizardDownloader:
         self.browser = browser_manager
         self.driver = browser_manager.driver
         self.wait = browser_manager.wait
-
-        # Папка для скачиваний (из браузера)
         self.downloads_dir = self.browser.download_dir
 
-        # Создаем папку если её нет
         if not os.path.exists(self.downloads_dir):
             os.makedirs(self.downloads_dir)
             print(f"📁 Создана папка для скачиваний: {self.downloads_dir}")
 
-        # Настройка pywinauto
         if PYWINAUTO_AVAILABLE:
             Timings.slow()
             print("✅ pywinauto инициализирована")
 
     def _handle_save_file_dialog(self, file_path, timeout=15):
-        """Обработка диалога сохранения файла (Save As) - ТОЛЬКО UIA"""
+        """Обработка диалога сохранения файла (Save As) через UIA"""
         if not PYWINAUTO_AVAILABLE:
             print("   ⚠️ pywinauto не установлена")
             return False
 
         try:
             print(f"   ⏳ Ожидание диалога сохранения...")
-            time.sleep(0.3)
+            self.browser._sleep(0.3)
 
             titles = ['Сохранить как', 'Save As', 'Сохранение', 'Сохранить', 'Save']
             dialog = None
-            dialog_uia = None
 
-            # Подключаемся к диалогу через Win32 (для поиска окна)
             for title in titles:
                 try:
                     app = Application().connect(title_re=title)
@@ -70,11 +63,8 @@ class VizardDownloader:
 
             dialog.wait('ready', timeout=timeout)
             dialog.set_focus()
-            time.sleep(0.3)
+            self.browser._sleep(0.3)
 
-            # =========================================================
-            # ПОДКЛЮЧАЕМСЯ ЧЕРЕЗ UIA BACKEND
-            # =========================================================
             try:
                 app_uia = Application(backend="uia").connect(handle=dialog.handle)
                 dialog_uia = app_uia.window(handle=dialog.handle)
@@ -83,11 +73,7 @@ class VizardDownloader:
                 print(f"   ❌ Ошибка подключения UIA: {e}")
                 return False
 
-            # =========================================================
-            # 1. ЧИТАЕМ ИМЯ ФАЙЛА ЧЕРЕЗ UIA
-            # =========================================================
             original_filename = None
-
             try:
                 edit = dialog_uia.child_window(class_name="Edit")
                 if edit.exists():
@@ -101,58 +87,49 @@ class VizardDownloader:
                 original_filename = ".mp4"
                 print(f"   ⚠️ Используем имя по умолчанию: {original_filename}")
 
-            # =========================================================
-            # 2. ФОРМИРУЕМ НОВОЕ ИМЯ
-            # =========================================================
             original_filename = original_filename.replace(" ", "_")
             original_filename = original_filename.replace(".mp4", "].mp4")
             new_filepath = file_path.replace(".mp4", f"_[{original_filename}")
+
             try:
                 edit = dialog_uia.child_window(class_name="Edit")
                 if edit.exists():
-                    # Способ 1: set_value() - напрямую устанавливает значение
                     try:
                         edit.set_value(new_filepath)
                         print(f"   ✅ Путь вставлен через UIA set_value()")
                     except:
-                        # Способ 2: set_text() - альтернативный метод
                         try:
                             edit.set_text(new_filepath)
                             print(f"   ✅ Путь вставлен через UIA set_text()")
                         except:
-                            # Способ 3: click() + type_keys() (минимальная эмуляция)
                             try:
                                 edit.click()
-                                edit.type_keys('^a')  # Ctrl+A
+                                edit.type_keys('^a')
                                 edit.type_keys('{DEL}')
                                 edit.type_keys(new_filepath)
                                 print(f"   ✅ Путь вставлен через UIA type_keys()")
                             except Exception as e:
-                                print(f"   ❌ Не удалось вставить путь через UIA: {e}")
+                                print(f"   ❌ Не удалось вставить путь: {e}")
                                 return False
                 else:
                     print("   ❌ Поле ввода не найдено через UIA")
                     return False
-
             except Exception as e:
                 print(f"   ❌ Ошибка вставки пути: {e}")
                 return False
 
-            time.sleep(0.1)
+            self.browser._sleep(0.1)
 
-            # =========================================================
-            # 4. НАЖИМАЕМ КНОПКУ СОХРАНИТЬ ЧЕРЕЗ UIA
-            # =========================================================
             try:
-                # Ищем кнопку "Сохранить" через UIA
                 save_button = dialog_uia.child_window(title_re='Сохранить|Save')
                 if save_button.exists():
                     save_button.click()
                     print("   💾 Кнопка 'Сохранить' нажата через UIA")
                     return True
                 else:
-                    # Если не нашли по названию, ищем по типу
-                    save_button = dialog_uia.child_window(control_type="Button", title_re='Сохранить|Save')
+                    save_button = dialog_uia.child_window(
+                        control_type="Button", title_re='Сохранить|Save'
+                    )
                     if save_button.exists():
                         save_button.click()
                         print("   💾 Кнопка 'Сохранить' нажата через UIA (control_type)")
@@ -160,9 +137,6 @@ class VizardDownloader:
             except Exception as e:
                 print(f"   ⚠️ Не удалось нажать кнопку через UIA: {e}")
 
-            # =========================================================
-            # 5. РЕЗЕРВ: НАЖИМАЕМ ENTER (если UIA не сработала)
-            # =========================================================
             try:
                 send_keys('{ENTER}')
                 print("   💾 Нажата клавиша Enter (резерв)")
@@ -183,7 +157,6 @@ class VizardDownloader:
             return False
 
     def _close_ai_agent_popup(self):
-        """Закрытие всплывающего окна View your clips"""
         try:
             popup = self.driver.find_elements(By.CSS_SELECTOR, ".bubble-inner")
             if popup and popup[0].is_displayed():
@@ -194,7 +167,7 @@ class VizardDownloader:
                     if close_btn and close_btn.is_displayed():
                         close_btn.click()
                         print("   ✅ Всплывающее окно закрыто через крестик")
-                        time.sleep(0.5)
+                        self.browser._sleep(0.5)
                         return True
                 except:
                     pass
@@ -204,7 +177,7 @@ class VizardDownloader:
                     if next_btn and next_btn.is_displayed():
                         next_btn.click()
                         print("   ✅ Всплывающее окно закрыто через Next")
-                        time.sleep(0.5)
+                        self.browser._sleep(0.5)
                         return True
                 except:
                     pass
@@ -219,7 +192,7 @@ class VizardDownloader:
                         return false;
                     """)
                     print("   ✅ Всплывающее окно удалено через JavaScript")
-                    time.sleep(0.5)
+                    self.browser._sleep(0.5)
                     return True
                 except:
                     pass
@@ -235,19 +208,16 @@ class VizardDownloader:
         print("=" * 50)
 
         try:
-            # Открываем новую вкладку для скачивания
             print("📌 0) Открытие новой вкладки для скачивания...")
             self.driver.execute_script("window.open('');")
             self.driver.switch_to.window(self.driver.window_handles[-1])
             print("   ✅ Новая вкладка открыта")
 
-            # 1) Переходим на страницу проектов
             print("📌 1) Переход на страницу проектов...")
             self.driver.get("https://vizard.ai/workspace")
             self.browser.wait_medium()
             self._close_ai_agent_popup()
 
-            # Получаем список имен проектов для обработки
             print("📌 2) Получение списка проектов...")
             project_names = self._get_project_names()
 
@@ -257,7 +227,6 @@ class VizardDownloader:
 
             print(f"   📊 Найдено проектов: {len(project_names)}")
 
-            # 3) Обрабатываем каждый проект по имени
             for i, project_name in enumerate(project_names, 1):
                 try:
                     if "Demo" in project_name:
@@ -266,18 +235,15 @@ class VizardDownloader:
 
                     print(f"\n📌 {i}) Обработка проекта: {project_name}")
 
-                    # Находим проект по имени на странице
                     project = self._find_project_by_name(project_name)
                     if not project:
                         print(f"   ⚠️ Проект '{project_name}' не найден на странице")
                         continue
 
-                    # Открываем проект
                     if not self._open_project_via_view_clips(project):
                         print(f"   ⚠️ Не удалось открыть проект {project_name}")
                         continue
 
-                    # Ждем появления кнопок Download
                     print(f"   ⏳ Ожидание появления кнопок Download...")
                     if not self._wait_for_download_buttons_with_refresh(timeout=1000):
                         print(f"   ⚠️ Время ожидания истекло для проекта {project_name}")
@@ -286,12 +252,10 @@ class VizardDownloader:
                         self._close_ai_agent_popup()
                         continue
 
-                    # Скачиваем видео
                     print(f"   📥 Скачивание видео из проекта...")
                     downloaded = self._download_videos_from_project(project_name)
                     print(f"   ✅ Скачано видео: {downloaded}")
 
-                    # Возвращаемся на страницу проектов
                     self.driver.get("https://vizard.ai/workspace")
                     self.browser.wait_medium()
                     self._close_ai_agent_popup()
@@ -314,14 +278,11 @@ class VizardDownloader:
             return False
 
     def _get_project_names(self):
-        """Получение списка имен проектов"""
         try:
-            time.sleep(2)
+            self.browser._sleep(2)
             projects = self.driver.find_elements(By.CSS_SELECTOR, ".project-item")
-
             if not projects:
                 projects = self.driver.find_elements(By.CSS_SELECTOR, ".list-item-space .project-item")
-
             if not projects:
                 return []
 
@@ -344,10 +305,8 @@ class VizardDownloader:
             return []
 
     def _find_project_by_name(self, project_name):
-        """Поиск проекта по имени на странице"""
         try:
             projects = self.driver.find_elements(By.CSS_SELECTOR, ".project-item")
-
             if not projects:
                 projects = self.driver.find_elements(By.CSS_SELECTOR, ".list-item-space .project-item")
 
@@ -358,22 +317,21 @@ class VizardDownloader:
                         return project
                 except:
                     continue
-
             return None
-
         except Exception as e:
             print(f"   ⚠️ Ошибка поиска проекта: {e}")
             return None
 
     def _open_project_via_view_clips(self, project):
-        """Открытие проекта через кнопку View clips"""
         try:
-            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", project)
-            time.sleep(0.5)
+            self.driver.execute_script(
+                "arguments[0].scrollIntoView({block: 'center'});", project
+            )
+            self.browser._sleep(0.5)
 
             actions = ActionChains(self.driver)
             actions.move_to_element(project).perform()
-            time.sleep(0.5)
+            self.browser._sleep(0.5)
 
             try:
                 view_clips_link = project.find_element(By.CSS_SELECTOR, "a.open-button.open-clip")
@@ -402,13 +360,12 @@ class VizardDownloader:
                 pass
 
             return False
-
         except Exception as e:
             print(f"   ⚠️ Ошибка открытия проекта: {e}")
             return False
 
     def _wait_for_download_buttons_with_refresh(self, timeout=1000):
-        """Ожидание появления кнопок Download с обновлением страницы каждые 30 секунд"""
+        """Ожидание кнопок Download с обновлением страницы (прерываемый цикл)."""
         waited = 0
         refresh_interval = 30
 
@@ -420,13 +377,14 @@ class VizardDownloader:
                 self._close_ai_agent_popup()
 
                 buttons = self._find_download_buttons()
-
                 if buttons:
                     print(f"   ✅ Кнопки Download появились! ({len(buttons)} шт)")
                     return True
 
                 try:
-                    processing = self.driver.find_elements(By.CSS_SELECTOR, ".item-trans-schedule .trans-item")
+                    processing = self.driver.find_elements(
+                        By.CSS_SELECTOR, ".item-trans-schedule .trans-item"
+                    )
                     if processing and processing[0].is_displayed():
                         status_text = processing[0].text.strip()
                         print(f"   ⏳ {status_text}... {waited} сек")
@@ -446,29 +404,31 @@ class VizardDownloader:
                     self.browser.close_ad_if_exists()
                     self._close_ai_agent_popup()
 
-                time.sleep(5)
+                self.browser._sleep(5)          # ✅ прерываемый sleep
                 waited += 5
 
             except Exception as e:
                 print(f"   ⚠️ Ошибка ожидания: {e}")
-                time.sleep(5)
+                self.browser._sleep(5)
                 waited += 5
 
         print(f"   ⚠️ Время ожидания истекло ({timeout} сек)")
         return False
 
     def _find_download_buttons(self):
-        """Поиск кнопок Download на странице - ТОЛЬКО с текстом Download"""
         try:
-            # Ищем по точному тексту Download
-            buttons = self.driver.find_elements(By.XPATH,
-                                                "//div[contains(@class, 'border-button') and contains(@class, 'narrow-video-button')]//span[text()='Download']")
-
+            buttons = self.driver.find_elements(
+                By.XPATH,
+                "//div[contains(@class, 'border-button') and contains(@class, 'narrow-video-button')]"
+                "//span[text()='Download']"
+            )
             if buttons:
                 result = []
                 for span in buttons:
                     try:
-                        parent = span.find_element(By.XPATH, "./ancestor::div[contains(@class, 'border-button')]")
+                        parent = span.find_element(
+                            By.XPATH, "./ancestor::div[contains(@class, 'border-button')]"
+                        )
                         if parent and parent.is_displayed():
                             result.append(parent)
                     except:
@@ -476,22 +436,19 @@ class VizardDownloader:
                 if result:
                     return result
 
-            # Альтернативный способ
-            buttons = self.driver.find_elements(By.XPATH,
-                                                "//div[contains(@class, 'border-button') and contains(., 'Download')]")
-
+            buttons = self.driver.find_elements(
+                By.XPATH,
+                "//div[contains(@class, 'border-button') and contains(., 'Download')]"
+            )
             visible_buttons = [btn for btn in buttons if btn.is_displayed() and "Download" in btn.text]
-
             return visible_buttons
 
-        except Exception as e:
+        except Exception:
             return []
 
     def _download_videos_from_project(self, project_name):
-        """Скачивание видео из проекта в общую папку downloads"""
         try:
-            time.sleep(1)
-
+            self.browser._sleep(1)
             download_buttons = self._find_download_buttons()
 
             if not download_buttons:
@@ -502,13 +459,14 @@ class VizardDownloader:
 
             for i, btn in enumerate(download_buttons, 1):
                 try:
-                    self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
-                    time.sleep(0.3)
+                    self.driver.execute_script(
+                        "arguments[0].scrollIntoView({block: 'center'});", btn
+                    )
+                    self.browser._sleep(0.3)
 
                     if "Download" not in btn.text:
                         continue
 
-                    # ✅ СОХРАНЯЕМ ПРЯМО В ПАПКУ DOWNLOADS (без подпапок)
                     filename = f"{project_name}_clip_{i}.mp4"
                     filepath = os.path.join(self.downloads_dir, filename)
 
@@ -521,20 +479,19 @@ class VizardDownloader:
                         self.driver.execute_script("arguments[0].click();", btn)
                         print(f"   🔔 Кнопка Download {i} нажата (JavaScript)")
 
-                    time.sleep(1)
+                    self.browser._sleep(1)
 
                     if self._handle_save_file_dialog(filepath):
                         print(f"   ✅ Файл сохранен: {filename}")
                         downloaded_count += 1
 
-                    time.sleep(0.5)
+                    self.browser._sleep(0.5)
 
                 except Exception as e:
                     print(f"   ⚠️ Ошибка скачивания {i}: {e}")
                     continue
 
             return downloaded_count
-
         except Exception as e:
             print(f"   ❌ Ошибка скачивания из проекта: {e}")
             return 0

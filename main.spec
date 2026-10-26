@@ -1,69 +1,20 @@
-# main.spec
 # -*- mode: python ; coding: utf-8 -*-
 
-import sys
-import os
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files
-
-# Собираем все подмодули для selenium
-selenium_hiddenimports = collect_submodules('selenium')
-webdriver_hiddenimports = collect_submodules('webdriver_manager')
-
-block_cipher = None
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        # Добавляем папки с кодом
-        ('classes', 'classes'),
-        ('utils', 'utils'),
-    ],
-    hiddenimports=[
-        # Selenium и все его подмодули
-        'selenium',
-        'selenium.webdriver',
-        'selenium.webdriver.common',
-        'selenium.webdriver.chrome',
-        'selenium.webdriver.chrome.options',
-        'selenium.webdriver.chrome.service',
-        'selenium.webdriver.support',
-        'selenium.webdriver.support.ui',
-        'selenium.webdriver.support.expected_conditions',
-        'selenium.common',
-        'selenium.common.exceptions',
-        # WebDriver Manager
-        'webdriver_manager',
-        'webdriver_manager.chrome',
-        'webdriver_manager.core',
-        'webdriver_manager.core.download_manager',
-        'webdriver_manager.core.manager',
-        'webdriver_manager.core.utils',
-        # Requests
-        'requests',
-        'requests.packages',
-        'requests.packages.urllib3',
-        # PyWinAuto
-        'pywinauto',
-        'pywinauto.application',
-        'pywinauto.timings',
-        'pywinauto.keyboard',
-        # Другие библиотеки
-        'pyperclip',
-        'urllib3',
-        'certifi',
-        'charset_normalizer',
-        'idna',
-    ] + selenium_hiddenimports + webdriver_hiddenimports,
+    datas=[],
+    hiddenimports=['selenium.webdriver.chrome.webdriver', 'selenium.webdriver.chrome.service'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
+    optimize=0,
 )
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
@@ -71,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='AIVideoDownloader',
+    name='main',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -84,5 +35,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,
 )

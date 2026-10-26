@@ -18,11 +18,12 @@ from utils.path_utils import get_base_dir, get_videos_output_path
 class BrowserManager:
     """Класс для управления браузером"""
 
-    def __init__(self, speed="slow", download_dir=None):
+    def __init__(self, speed="slow", download_dir=None, pause_controller=None):
         self.driver = None
         self.wait = None
         self.speed = speed
         self.base_dir = get_base_dir()
+        self.pause_controller = pause_controller      # <-- НОВОЕ
 
         # Настройка папки для скачиваний
         if download_dir is None:
@@ -60,30 +61,39 @@ class BrowserManager:
 
         print(f"📂 Папка для скачиваний: {self.download_dir}")
 
+    # ---------- НОВЫЕ: пауза/прерываемый sleep ----------
+    def _sleep(self, seconds):
+        """Прерываемый sleep. Используется и внутри, и снаружи."""
+        if self.pause_controller:
+            self.pause_controller.sleep(seconds)
+        else:
+            time.sleep(seconds)
+
+    def check_pause(self):
+        """Ручная проверка паузы/остановки (без сна)."""
+        if self.pause_controller:
+            self.pause_controller.check_point()
+
+    # ---------- ИЗМЕНЕНЫ: теперь идут через _sleep ----------
     def wait_short(self):
-        time.sleep(self.short_wait)
+        self._sleep(self.short_wait)
 
     def wait_medium(self):
-        time.sleep(self.medium_wait)
+        self._sleep(self.medium_wait)
 
     def wait_long(self):
-        time.sleep(self.long_wait)
+        self._sleep(self.long_wait)
 
     def _get_chromedriver_path(self):
-        """
-        Ищет ChromeDriver в папке с проектом.
-        Сначала проверяет папку drivers/, затем корневую папку проекта.
-        """
-        # Список возможных имен файлов ChromeDriver
+        """Ищет ChromeDriver в папке с проектом."""
         driver_names = [
-            "chromedriver.exe",  # Windows
-            "chromedriver",  # Linux/Mac
+            "chromedriver.exe",
+            "chromedriver",
             "chromedriver_win32.exe",
             "chromedriver_linux64",
             "chromedriver_mac64"
         ]
 
-        # Проверяем папку drivers/
         drivers_folder = os.path.join(self.base_dir, "drivers")
         if os.path.exists(drivers_folder):
             for name in driver_names:
@@ -92,27 +102,22 @@ class BrowserManager:
                     print(f"   ✅ Найден ChromeDriver: {driver_path}")
                     return driver_path
 
-        # Проверяем корневую папку
         for name in driver_names:
             driver_path = os.path.join(self.base_dir, name)
             if os.path.exists(driver_path):
                 print(f"   ✅ Найден ChromeDriver: {driver_path}")
                 return driver_path
 
-        # Если не найден - возвращаем None (будет использован webdriver-manager)
         print("   ⚠️ ChromeDriver не найден в папке проекта, будет загружен автоматически...")
         return None
 
-    # classes/browser_manager.py (исправленный метод init_browser)
-
     def init_browser(self):
-        """Запуск браузера в режиме инкогнито - исправленная версия"""
+        """Запуск браузера в режиме инкогнито"""
         print("\n" + "=" * 50)
         print("ШАГ 2: Инициализация ChromeDriver (инкогнито)")
         print("=" * 50)
 
         try:
-            # Проверяем, что Chrome действительно существует
             chrome_paths = [
                 r"C:\Program Files\Google\Chrome\Application\chrome.exe",
                 r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
@@ -134,7 +139,6 @@ class BrowserManager:
 
             chrome_options = Options()
 
-            # ОСНОВНЫЕ АРГУМЕНТЫ ДЛЯ СТАБИЛЬНОСТИ
             chrome_options.add_argument("--incognito")
             chrome_options.add_argument("--disable-blink-features=AutomationControlled")
             chrome_options.add_argument("--disable-gpu")
@@ -142,8 +146,6 @@ class BrowserManager:
             chrome_options.add_argument("--disable-dev-shm-usage")
             chrome_options.add_argument("--window-size=1920,1080")
             chrome_options.add_argument("--start-maximized")
-
-            # ДОПОЛНИТЕЛЬНЫЕ АРГУМЕНТЫ ДЛЯ СТАБИЛЬНОСТИ
             chrome_options.add_argument("--disable-extensions")
             chrome_options.add_argument("--disable-popup-blocking")
             chrome_options.add_argument("--disable-logging")
@@ -154,7 +156,6 @@ class BrowserManager:
             chrome_options.add_argument("--disable-session-crashed-bubble")
             chrome_options.add_argument("--disable-infobars")
 
-            # Указываем путь к Chrome (важно для .exe!)
             for path in chrome_paths:
                 if os.path.exists(path):
                     chrome_options.binary_location = path
@@ -177,7 +178,6 @@ class BrowserManager:
             }
             chrome_options.add_experimental_option("prefs", prefs)
 
-            # Ищем ChromeDriver в корне проекта или в drivers
             chromedriver_path = self._get_chromedriver_path()
 
             if chromedriver_path and os.path.exists(chromedriver_path):
@@ -185,12 +185,12 @@ class BrowserManager:
                 service = Service(executable_path=chromedriver_path)
             else:
                 print("🔄 Использование webdriver-manager...")
-                from webdriver_manager.chrome import ChromeDriverManager
                 service = Service(ChromeDriverManager().install())
 
-            # Создаем драйвер с дополнительными опциями
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
-            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+            self.driver.execute_script(
+                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+            )
             self.wait = WebDriverWait(self.driver, self.timeout)
 
             print(f"✅ Браузер успешно запущен в режиме инкогнито")
@@ -200,7 +200,6 @@ class BrowserManager:
         except Exception as e:
             print(f"❌ Ошибка запуска браузера: {e}")
 
-            # Проверяем наличие Chrome
             import subprocess
             try:
                 result = subprocess.run(['where', 'chrome'], capture_output=True, text=True)
@@ -215,21 +214,17 @@ class BrowserManager:
             traceback.print_exc()
 
             print("\n💡 Возможные решения:")
-            print("   1. Установите Google Chrome с официального сайта:")
-            print("      https://www.google.com/chrome/")
+            print("   1. Установите Google Chrome: https://www.google.com/chrome/")
             print("   2. Проверьте, что ChromeDriver соответствует версии Chrome")
             print("   3. Попробуйте запустить .exe от имени администратора")
             print("   4. Перезагрузите компьютер")
             return False
 
     def get_download_dir(self):
-        """Возвращает путь к папке скачиваний"""
         return self.download_dir
 
     def close_ad_if_exists(self):
-        """
-        Закрытие рекламного баннера путем удаления ad_position_box из DOM
-        """
+        """Закрытие рекламного баннера путем удаления ad_position_box из DOM"""
         try:
             time.sleep(0.3)
 
@@ -301,25 +296,16 @@ class BrowserManager:
             try:
                 self.driver.execute_script("""
                     var adBox = document.getElementById('ad_position_box');
-                    if (adBox) {
-                        adBox.remove();
-                    }
+                    if (adBox) { adBox.remove(); }
 
                     var adSelectors = [
-                        '.google-ads',
-                        '.adsbygoogle',
-                        '.ad-container',
-                        '.ad-banner',
-                        '[aria-label="Close ad"]',
-                        '.close-button-outer'
+                        '.google-ads', '.adsbygoogle', '.ad-container',
+                        '.ad-banner', '[aria-label="Close ad"]', '.close-button-outer'
                     ];
-
                     adSelectors.forEach(function(selector) {
                         try {
                             var elements = document.querySelectorAll(selector);
-                            elements.forEach(function(el) {
-                                el.remove();
-                            });
+                            elements.forEach(function(el) { el.remove(); });
                         } catch(e) {}
                     });
 
@@ -362,10 +348,11 @@ class BrowserManager:
         print("   ⚠️ Не удалось удалить рекламу после всех попыток")
         return False
 
-    def handle_alert(self, accept=True):
-        """Обработка alert"""
+    def handle_alert(self, accept=True, timeout=2):
+        """Обработка alert. Быстрый таймаут — по умолчанию 2 сек."""
+        from selenium.webdriver.support.ui import WebDriverWait
         try:
-            alert = self.wait.until(EC.alert_is_present())
+            alert = WebDriverWait(self.driver, timeout).until(EC.alert_is_present())
             alert_text = alert.text
             print(f"   📬 Alert: {alert_text}")
 
